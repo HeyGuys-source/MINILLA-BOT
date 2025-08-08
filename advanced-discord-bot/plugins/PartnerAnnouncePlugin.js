@@ -51,22 +51,39 @@ class PartnerAnnouncePlugin extends BasePlugin {
     async init() {
         this.log('Partnership Announce Plugin initializing...');
         
-        // Register the slash command
-        await this.registerSlashCommand();
-        
         // Set up command handler
         this.client.on('interactionCreate', this.handleInteraction.bind(this));
+        
+        // Register slash command when client is ready
+        if (this.client.isReady()) {
+            await this.registerSlashCommand();
+        } else {
+            this.client.once('ready', async () => {
+                await this.registerSlashCommand();
+            });
+        }
         
         this.log('Partnership Announce Plugin initialized successfully!');
     }
     
     async registerSlashCommand() {
         try {
+            // Check if bot application is available
+            if (!this.client.application) {
+                this.log('Bot application not ready, waiting...', 'warn');
+                return;
+            }
+            
             // Register the slash command globally
             await this.client.application.commands.create(this.slashCommand.toJSON());
-            this.log('Slash command registered successfully');
+            this.log('Partnership announce slash command registered successfully');
         } catch (error) {
-            this.log(`Failed to register slash command: ${error.message}`, 'error');
+            this.log(`Failed to register partnership slash command: ${error.message}`, 'error');
+            
+            // Provide helpful error information
+            if (error.message.includes('Missing Access')) {
+                this.log('Bot may be missing applications.commands permission', 'error');
+            }
         }
     }
     
